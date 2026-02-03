@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERIFIER_URL="${VERIFIER_URL:-http://localhost:3000}"
+SIM_MODE="${SIM_MODE:-1}"
 SAMPLE_JSON="${ROOT_DIR}/apps/verifier/examples/attest.sample.json"
 
 if [[ ! -f "${SAMPLE_JSON}" ]]; then
@@ -52,32 +53,58 @@ fi
 echo "Attestation ID: ${attestation_id}"
 
 echo
-echo "B) Mint PoC receipt (simulation mode)"
-echo "SBF/validator builds are blocked on this machine, so we print the intended Anchor call."
-echo "Anchor instruction: mint_poc_receipt"
-echo "Inputs:"
-echo "  attestation_id: ${attestation_id}"
-echo "  photo_hash: see payload photoHash"
-echo "  zone_id: zone-17"
-echo "  material_type: plastic (0)"
-echo "  quantity: 3"
-echo "  timestamp: now"
-echo "Accounts:"
-echo "  authority: <demo wallet>"
-echo "  player_profile PDA: [player, authority]"
-echo "  poc_receipt PDA: [poc, authority, attestation_id]"
-echo "Unit tests: programs/ecobuild/src/lib.rs (seed derivation + validation)"
+if [[ "${SIM_MODE}" == "1" ]]; then
+  echo "B) Mint PoC receipt (simulation mode)"
+  echo "SBF/validator builds are blocked on this machine, so we print the intended Anchor call."
+  echo "Anchor instruction: mint_poc_receipt"
+  echo "Inputs:"
+  echo "  attestation_id: ${attestation_id}"
+  echo "  photo_hash: see payload photoHash"
+  echo "  zone_id: zone-17"
+  echo "  material_type: plastic (0)"
+  echo "  quantity: 3"
+  echo "  timestamp: now"
+  echo "Accounts:"
+  echo "  authority: <demo wallet>"
+  echo "  player_profile PDA: [player, authority]"
+  echo "  poc_receipt PDA: [poc, authority, attestation_id]"
+  echo "Unit tests: programs/ecobuild/src/lib.rs (seed derivation + validation)"
 
-echo
-echo "C) Contribute credits (simulation mode)"
-echo "Anchor instruction: contribute_credits"
-echo "Inputs:"
-echo "  amount: 3"
-echo "Accounts:"
-echo "  authority: <demo wallet>"
-echo "  player_profile PDA: [player, authority]"
-echo "  project_pool PDA: [project, authority, project_seed]"
-echo "Unit tests: programs/ecobuild/src/lib.rs (credit contribution + overflow checks)"
+  echo
+  echo "C) Contribute credits (simulation mode)"
+  echo "Anchor instruction: contribute_credits"
+  echo "Inputs:"
+  echo "  amount: 3"
+  echo "Accounts:"
+  echo "  authority: <demo wallet>"
+  echo "  player_profile PDA: [player, authority]"
+  echo "  project_pool PDA: [project, authority, project_seed]"
+  echo "Unit tests: programs/ecobuild/src/lib.rs (credit contribution + overflow checks)"
+else
+  echo "B) Mint PoC receipt (devnet-ready mode)"
+  echo "SIM_MODE=0 requires Solana + Anchor toolchain and a configured wallet."
+  echo "This mode will execute real transactions once implemented."
+  echo "Checks:"
+  if ! command -v solana >/dev/null; then
+    echo "  - solana CLI: missing"
+  else
+    echo "  - solana CLI: found"
+  fi
+  if ! command -v anchor >/dev/null; then
+    echo "  - anchor CLI: missing"
+  else
+    echo "  - anchor CLI: found"
+  fi
+  if ! command -v cargo-build-sbf >/dev/null; then
+    echo "  - cargo-build-sbf: missing"
+  else
+    echo "  - cargo-build-sbf: found"
+  fi
+
+  echo
+  echo "TODO: wire Anchor client to send mint_poc_receipt using attestation_id."
+  echo "TODO: wire contribute_credits transaction and print resulting counters."
+fi
 
 echo
 echo "Demo complete."
