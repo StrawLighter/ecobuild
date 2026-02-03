@@ -9,9 +9,9 @@ EcoBuild turns waste collection into a Solana-powered construction economy. Play
 - Scripts and docs for running the happy-path demo.
 
 ## Current Milestone
-**Status:** `feat: minimal ecobuild instructions + native tests`
+**Status:** `feat: mocked verifier attest endpoint`
 - Anchor workspace includes player/profile init, project pool creation, and credit contribution handlers with helper tests.
-- Verifier service exposes `/health` and `/attest` endpoints (stub) for future integration.
+- Verifier service exposes `/health` and a mocked `/attest` endpoint with validation + deterministic attestation hashes.
 - Demo script placeholder outlines the walkthrough.
 
 ## Build & Test Status
