@@ -36,6 +36,10 @@ EcoBuild turns waste collection into a Solana-powered construction economy. Play
    { "ok": true, "version": "0.1.0", "commit": "dev" }
    ```
 
+## Demo (60 Seconds)
+Use the local demo script to hit the verifier and show the PoC flow:
+`docs/demo-run.md`
+
 ## Hackathon Deliverables
 - **Solana Program (Anchor)** handling player registration, verified material submissions, and project material vaults.
 - **Openclaw Agent Workers** for submission verification, on-chain interactions, allocation logic, and reward issuance.

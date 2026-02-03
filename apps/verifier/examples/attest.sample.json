@@ -1,0 +1,9 @@
+{
+  "playerPubkey": "DemoPlayer1111111111111111111111111111111",
+  "materialType": "plastic",
+  "quantity": 3,
+  "zoneId": "zone-17",
+  "photoHash": "photo-hash-abc",
+  "gps": { "lat": 37.7749, "lon": -122.4194 },
+  "timestamp": 0
+}
