@@ -81,29 +81,147 @@ if [[ "${SIM_MODE}" == "1" ]]; then
   echo "  project_pool PDA: [project, authority, project_seed]"
   echo "Unit tests: programs/ecobuild/src/lib.rs (credit contribution + overflow checks)"
 else
-  echo "B) Mint PoC receipt (devnet-ready mode)"
-  echo "SIM_MODE=0 requires Solana + Anchor toolchain and a configured wallet."
-  echo "This mode will execute real transactions once implemented."
-  echo "Checks:"
-  if ! command -v solana >/dev/null; then
-    echo "  - solana CLI: missing"
-  else
-    echo "  - solana CLI: found"
-  fi
-  if ! command -v anchor >/dev/null; then
-    echo "  - anchor CLI: missing"
-  else
-    echo "  - anchor CLI: found"
-  fi
-  if ! command -v cargo-build-sbf >/dev/null; then
-    echo "  - cargo-build-sbf: missing"
-  else
-    echo "  - cargo-build-sbf: found"
+  echo "B) Mint PoC receipt + C) Contribute credits (devnet — real transactions)"
+
+  # ── pre-flight checks ──────────────────────────────────────────────────────
+  _missing=0
+  for _cmd in solana anchor; do
+    if ! command -v "$_cmd" >/dev/null 2>&1; then
+      echo "  ERROR: '$_cmd' not found in PATH." >&2
+      echo "         Run 'scripts/bootstrap-ubuntu.sh' first." >&2
+      _missing=1
+    fi
+  done
+
+  IDL_PATH="${ROOT_DIR}/target/idl/ecobuild.json"
+  if [[ ! -f "$IDL_PATH" ]]; then
+    echo "  ERROR: IDL not found at $IDL_PATH" >&2
+    echo "         Run 'scripts/build-sbf.sh' to generate it." >&2
+    _missing=1
   fi
 
+  KEYPAIR_PATH="${KEYPAIR_PATH:-$HOME/.config/solana/id.json}"
+  if [[ ! -f "$KEYPAIR_PATH" ]]; then
+    echo "  ERROR: Keypair not found at $KEYPAIR_PATH" >&2
+    echo "         Create one with:  solana-keygen new --outfile $KEYPAIR_PATH" >&2
+    _missing=1
+  fi
+
+  if [[ $_missing -eq 1 ]]; then
+    echo "Aborting — pre-flight checks failed." >&2
+    exit 1
+  fi
+
+  SOLANA_URL="${SOLANA_URL:-https://api.devnet.solana.com}"
+  echo "  RPC:     $SOLANA_URL"
+  echo "  Wallet:  $KEYPAIR_PATH"
+  echo "  IDL:     $IDL_PATH"
   echo
-  echo "TODO: wire Anchor client to send mint_poc_receipt using attestation_id."
-  echo "TODO: wire contribute_credits transaction and print resulting counters."
+
+  # ── execute on-chain transactions via inline Anchor client ─────────────────
+  ATTEST_RESPONSE="$attest_response" \
+  KEYPAIR_PATH="$KEYPAIR_PATH" \
+  SOLANA_URL="$SOLANA_URL" \
+  IDL_PATH="$IDL_PATH" \
+  node <<'ECOBUILD_TX'
+const anchor = require("@coral-xyz/anchor");
+const fs     = require("fs");
+const crypto = require("crypto");
+
+// ── load config ──────────────────────────────────────────────────────────────
+const idl        = JSON.parse(fs.readFileSync(process.env.IDL_PATH, "utf8"));
+const keypairRaw = JSON.parse(fs.readFileSync(process.env.KEYPAIR_PATH, "utf8"));
+const wallet     = new anchor.Wallet(
+  anchor.web3.Keypair.fromSecretKey(new Uint8Array(keypairRaw))
+);
+const connection = new anchor.web3.Connection(process.env.SOLANA_URL, "finalized");
+const provider   = new anchor.AnchorProvider(connection, wallet, { commitment: "finalized" });
+anchor.setProvider(provider);
+
+const program   = new anchor.Program(idl, provider);
+const authority = wallet.publicKey;
+
+// ── parse verifier response ──────────────────────────────────────────────────
+const resp          = JSON.parse(process.env.ATTEST_RESPONSE);
+const attestationId = Buffer.from(resp.attestationId, "hex");          // 32 bytes (sha256 hex → raw)
+const photoHash     = crypto.createHash("sha256")
+                        .update(resp.normalized.photoHash).digest();    // 32 bytes
+const zoneId        = resp.normalized.zoneId;
+const materialMap   = { plastic: 0, glass: 1, metal: 2, paper: 3 };
+const materialType  = materialMap[resp.normalized.materialType];
+const quantity      = new anchor.BN(resp.normalized.quantity);
+const timestamp     = new anchor.BN(Math.floor(Date.now() / 1000));
+
+// ── derive PDAs ──────────────────────────────────────────────────────────────
+const [playerPda] = anchor.web3.PublicKey.findProgramAddressSync(
+  [Buffer.from("player"), authority.toBuffer()],
+  program.programId
+);
+const [pocPda] = anchor.web3.PublicKey.findProgramAddressSync(
+  [Buffer.from("poc"), authority.toBuffer(), attestationId],
+  program.programId
+);
+const projectSeed = new anchor.BN(1);
+const [poolPda] = anchor.web3.PublicKey.findProgramAddressSync(
+  [Buffer.from("project"), authority.toBuffer(), projectSeed.toArrayLike(Buffer, "le", 8)],
+  program.programId
+);
+
+(async () => {
+  // B-1) initialize_player  (skip if already on-chain)
+  if (!(await connection.getAccountInfo(playerPda))) {
+    const tx = await program.methods
+      .initializePlayer()
+      .accounts({ authority, playerProfile: playerPda })
+      .rpc();
+    console.log("  initialize_player tx:", tx);
+  } else {
+    console.log("  initialize_player: already exists — skipping");
+  }
+
+  // B-2) mint_poc_receipt
+  const mintTx = await program.methods
+    .mintPocReceipt(
+      [...attestationId],
+      [...photoHash],
+      zoneId,
+      materialType,
+      quantity,
+      timestamp
+    )
+    .accounts({
+      authority,
+      playerProfile: playerPda,
+      pocReceipt:    pocPda,
+    })
+    .rpc();
+  console.log("  mint_poc_receipt tx:", mintTx);
+
+  // C-1) create_project_pool  (skip if already on-chain)
+  if (!(await connection.getAccountInfo(poolPda))) {
+    const tx = await program.methods
+      .createProjectPool(projectSeed, "Demo Pool", new anchor.BN(100))
+      .accounts({ authority, projectPool: poolPda })
+      .rpc();
+    console.log("  create_project_pool tx:", tx);
+  } else {
+    console.log("  create_project_pool: already exists — skipping");
+  }
+
+  // C-2) contribute_credits
+  const creditsTx = await program.methods
+    .contributeCredits(quantity)
+    .accounts({
+      authority,
+      playerProfile: playerPda,
+      projectPool:   poolPda,
+    })
+    .rpc();
+  console.log("  contribute_credits tx:", creditsTx);
+
+  console.log("\n  All transactions confirmed on devnet.");
+})();
+ECOBUILD_TX
 fi
 
 echo
