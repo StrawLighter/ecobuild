@@ -1,0 +1,282 @@
+#![allow(unexpected_cfgs)]
+
+use anchor_lang::prelude::*;
+
+declare_id!("EcoBui1d11111111111111111111111111111111111");
+
+#[program]
+pub mod ecobuild {
+    use super::*;
+
+    pub fn initialize_player(ctx: Context<InitializePlayer>) -> Result<()> {
+        ctx.accounts
+            .player_profile
+            .initialize(ctx.accounts.authority.key(), ctx.bumps.player_profile)
+    }
+
+    pub fn create_project_pool(
+        ctx: Context<CreateProjectPool>,
+        project_seed: u64,
+        name: String,
+        goal_credits: u64,
+    ) -> Result<()> {
+        ctx.accounts.project_pool.initialize(
+            ctx.accounts.authority.key(),
+            ctx.bumps.project_pool,
+            project_seed,
+            goal_credits,
+            &name,
+        )
+    }
+
+    pub fn contribute_credits(ctx: Context<ContributeCredits>, amount: u64) -> Result<()> {
+        if amount == 0 {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+
+        let player = &mut ctx.accounts.player_profile;
+        let pool = &mut ctx.accounts.project_pool;
+        player.add_credits(amount)?;
+        pool.record_contribution(amount)
+    }
+}
+
+#[derive(Accounts)]
+pub struct InitializePlayer<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(
+        init,
+        payer = authority,
+        space = PlayerProfile::SIZE,
+        seeds = [PlayerProfile::SEED_PREFIX, authority.key().as_ref()],
+        bump
+    )]
+    pub player_profile: Account<'info, PlayerProfile>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(project_seed: u64)]
+pub struct CreateProjectPool<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(
+        init,
+        payer = authority,
+        space = ProjectPool::SIZE,
+        seeds = [
+            ProjectPool::SEED_PREFIX,
+            authority.key().as_ref(),
+            &project_seed.to_le_bytes()
+        ],
+        bump
+    )]
+    pub project_pool: Account<'info, ProjectPool>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ContributeCredits<'info> {
+    pub authority: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [PlayerProfile::SEED_PREFIX, authority.key().as_ref()],
+        bump = player_profile.bump,
+        constraint = player_profile.authority == authority.key()
+    )]
+    pub player_profile: Account<'info, PlayerProfile>,
+    #[account(
+        mut,
+        seeds = [
+            ProjectPool::SEED_PREFIX,
+            project_pool.authority.as_ref(),
+            &project_pool.seed.to_le_bytes()
+        ],
+        bump = project_pool.bump
+    )]
+    pub project_pool: Account<'info, ProjectPool>,
+}
+
+#[account]
+pub struct PlayerProfile {
+    pub authority: Pubkey,
+    pub bump: u8,
+    pub total_credits: u64,
+}
+
+impl PlayerProfile {
+    pub const SEED_PREFIX: &'static [u8] = b"player";
+    pub const SIZE: usize = 8  // discriminator
+        + 32                   // authority pubkey
+        + 1                    // bump
+        + 8; // total credits
+
+    pub fn initialize(&mut self, authority: Pubkey, bump: u8) -> Result<()> {
+        self.authority = authority;
+        self.bump = bump;
+        self.total_credits = 0;
+        Ok(())
+    }
+
+    pub fn add_credits(&mut self, amount: u64) -> Result<()> {
+        self.total_credits = self
+            .total_credits
+            .checked_add(amount)
+            .ok_or(ErrorCode::Overflow)?;
+        Ok(())
+    }
+}
+
+#[account]
+pub struct ProjectPool {
+    pub authority: Pubkey,
+    pub bump: u8,
+    pub seed: u64,
+    pub goal_credits: u64,
+    pub received_credits: u64,
+    pub name_len: u8,
+    pub name: [u8; ProjectPool::NAME_MAX_LEN],
+}
+
+impl ProjectPool {
+    pub const SEED_PREFIX: &'static [u8] = b"project";
+    pub const NAME_MAX_LEN: usize = 32;
+    pub const SIZE: usize = 8  // discriminator
+        + 32                   // authority
+        + 1                    // bump
+        + 8                    // seed
+        + 8                    // goal credits
+        + 8                    // received credits
+        + 1                    // name length
+        + Self::NAME_MAX_LEN; // name bytes
+
+    pub fn initialize(
+        &mut self,
+        authority: Pubkey,
+        bump: u8,
+        seed: u64,
+        goal: u64,
+        name: &str,
+    ) -> Result<()> {
+        if goal == 0 {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+        if name.as_bytes().len() > Self::NAME_MAX_LEN {
+            return Err(ErrorCode::NameTooLong.into());
+        }
+
+        self.authority = authority;
+        self.bump = bump;
+        self.seed = seed;
+        self.goal_credits = goal;
+        self.received_credits = 0;
+        self.name_len = name.len() as u8;
+        self.name = [0u8; Self::NAME_MAX_LEN];
+        self.name[..name.len()].copy_from_slice(name.as_bytes());
+        Ok(())
+    }
+
+    pub fn record_contribution(&mut self, amount: u64) -> Result<()> {
+        self.received_credits = self
+            .received_credits
+            .checked_add(amount)
+            .ok_or(ErrorCode::Overflow)?;
+        Ok(())
+    }
+
+    pub fn name(&self) -> String {
+        let bytes = &self.name[..self.name_len as usize];
+        String::from_utf8(bytes.to_vec()).unwrap_or_default()
+    }
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Amount must be greater than zero")]
+    InvalidAmount,
+    #[msg("Project name exceeds max length")]
+    NameTooLong,
+    #[msg("Arithmetic overflow")]
+    Overflow,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn player_initialize_sets_defaults() {
+        let authority = Pubkey::new_unique();
+        let mut profile = PlayerProfile {
+            authority: Pubkey::default(),
+            bump: 0,
+            total_credits: 12,
+        };
+
+        profile.initialize(authority, 7).unwrap();
+        assert_eq!(profile.authority, authority);
+        assert_eq!(profile.bump, 7);
+        assert_eq!(profile.total_credits, 0);
+    }
+
+    #[test]
+    fn project_pool_initialize_and_contribute() {
+        let authority = Pubkey::new_unique();
+        let mut pool = ProjectPool {
+            authority: Pubkey::default(),
+            bump: 0,
+            seed: 0,
+            goal_credits: 0,
+            received_credits: 0,
+            name_len: 0,
+            name: [0u8; ProjectPool::NAME_MAX_LEN],
+        };
+
+        pool.initialize(authority, 4, 42, 10, "Community Garden")
+            .unwrap();
+        assert_eq!(pool.authority, authority);
+        assert_eq!(pool.bump, 4);
+        assert_eq!(pool.seed, 42);
+        assert_eq!(pool.goal_credits, 10);
+        assert_eq!(pool.received_credits, 0);
+        assert_eq!(pool.name(), "Community Garden");
+
+        pool.record_contribution(6).unwrap();
+        assert_eq!(pool.received_credits, 6);
+
+        let err = pool.record_contribution(u64::MAX).unwrap_err();
+        assert_eq!(err, ErrorCode::Overflow.into());
+    }
+
+    #[test]
+    fn player_add_credits_checks_overflow() {
+        let mut profile = PlayerProfile {
+            authority: Pubkey::default(),
+            bump: 1,
+            total_credits: u64::MAX,
+        };
+
+        let err = profile.add_credits(1).unwrap_err();
+        assert_eq!(err, ErrorCode::Overflow.into());
+    }
+
+    #[test]
+    fn project_name_too_long() {
+        let mut pool = ProjectPool {
+            authority: Pubkey::default(),
+            bump: 0,
+            seed: 0,
+            goal_credits: 0,
+            received_credits: 0,
+            name_len: 0,
+            name: [0u8; ProjectPool::NAME_MAX_LEN],
+        };
+
+        let long_name = "x".repeat(ProjectPool::NAME_MAX_LEN + 1);
+        let err = pool
+            .initialize(Pubkey::new_unique(), 2, 5, 10, &long_name)
+            .unwrap_err();
+        assert_eq!(err, ErrorCode::NameTooLong.into());
+    }
+}

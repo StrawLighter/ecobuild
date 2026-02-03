@@ -3,20 +3,52 @@
 ## Vision
 EcoBuild turns waste collection into a Solana-powered construction economy. Players verify cleanup efforts, earn tokenized material credits, and direct them toward community building projects orchestrated by autonomous agents.
 
+## What's in the MVP
+- Anchor program that initializes players and records contributions.
+- Verification service stub for proof-of-cleanup ingestion.
+- Scripts and docs for running the happy-path demo.
+
+## Current Milestone
+**Status:** `feat: minimal ecobuild instructions + native tests`
+- Anchor workspace includes player/profile init, project pool creation, and credit contribution handlers with helper tests.
+- Verifier service exposes `/health` and `/attest` endpoints (stub) for future integration.
+- Demo script placeholder outlines the walkthrough.
+
+## Build & Test Status
+- `cargo build` (native) succeeds.
+- `anchor build` currently blocked: `cargo-build-sbf` tool is missing and `release.solana.com` is unreachable from this machine. See `docs/build-notes.md` and `docs/toolchain.md` for remediation steps.
+- `anchor test` pending until the SBF toolchain is installed (same issue as above).
+
+## How to Run the Health Check
+1. Install dependencies and build the verifier:
+   ```bash
+   cd apps/verifier
+   npm install
+   npm run build
+   npm start
+   ```
+2. In a separate terminal, call the health endpoint:
+   ```bash
+   curl http://localhost:3000/health
+   ```
+   Expected response:
+   ```json
+   { "ok": true, "version": "0.1.0", "commit": "dev" }
+   ```
+
 ## Hackathon Deliverables
 - **Solana Program (Anchor)** handling player registration, verified material submissions, and project material vaults.
 - **Openclaw Agent Workers** for submission verification, on-chain interactions, allocation logic, and reward issuance.
 - **Demo Dashboard** visualizing player standings and real-time project progress.
 - **Forum & Project Assets** including ideation posts, progress updates, and submission materials.
 
-## Immediate Tasks
-1. Register hackathon agent ✅
-2. Scaffold GitHub repo + local project structure
-3. Design Solana program accounts & instructions
-4. Draft agent workflow diagrams
-5. Implement MVP verification + submission pipeline
-6. Build lightweight dashboard for demo
-7. Prepare project entry (description, Solana integration write-up)
+## Repository Structure
+```
+programs/    # Anchor programs
+apps/        # Agent and service code (verifier, etc.)
+scripts/     # Demo helpers
+docs/        # Architecture + planning docs
+```
 
 ## Open Questions
 - Final decision on material token representation (SPL token vs. metadata NFT)

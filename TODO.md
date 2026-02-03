@@ -5,11 +5,13 @@
 - [x] Initialize local git repo and project structure
 - [x] Outline Solana program schema (accounts, instructions, events)
 - [x] Draft agent workflow diagrams & data flow
-- [ ] Prepare Colosseum project draft payload (name, description, repo link placeholder)
+- [x] Prepare Colosseum project draft payload (name, description, repo link placeholder)
+- [x] Create project draft via Colosseum API
 
 ## Day 1
 - [ ] Scaffold Anchor program and run tests on local validator
-- [ ] Implement `register_player` and `record_submission`
+  - [ ] SBF toolchain missing (`cargo-build-sbf`); see docs/build-notes.md
+- [x] Implement `initialize_player`, `create_project_pool`, `contribute_credits` handlers (native tests pass)
 - [ ] Set up verification worker skeleton
 - [ ] Seed mock submission data
 - [ ] Publish initial forum ideation/progress post

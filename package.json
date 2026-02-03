@@ -1,0 +1,17 @@
+{
+  "name": "ecobuild",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "anchor test"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "0.29.0",
+    "@types/mocha": "10.0.6",
+    "@types/node": "20.11.17",
+    "chai": "4.4.1",
+    "mocha": "10.2.0",
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3"
+  }
+}

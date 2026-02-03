@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "programs/ecobuild"
+]
+resolver = "2"
+
+[profile.release]
+overflow-checks = true

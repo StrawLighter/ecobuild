@@ -1,19 +1,16 @@
-# Verifier Worker
+# EcoBuild Verifier Service
 
-Off-chain worker that reviews EcoBuild material-collection submissions.
+Minimal Fastify server that will later host submission verification logic.
 
-## Responsibilities
-- Receive submission payloads (photo hash, GPS, material type, quantity).
-- Run validation checks (stub / manual-review mode for MVP).
-- On approval, sign and broadcast an attestation to the Solana program via `record_submission`.
-- On rejection, return a signed denial with reason.
+## Endpoints
+- `GET /health` → `{ ok: true, version, commit }`
+- `POST /attest` → `{ message: "not implemented yet" }`
 
-## MVP Mode
-Manual review is the default. The worker exposes a local HTTP endpoint; a human operator ACKs or rejects each submission before the on-chain transaction is built.
-
-## Setup (later)
+## Local Development
 ```bash
+cd apps/verifier
 npm install
-cp .env.example .env   # fill in RPC_URL and AGENT_WALLET
 npm run dev
 ```
+
+The service listens on port `3000` by default. Override with `PORT=4000 npm run dev`.

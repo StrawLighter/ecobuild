@@ -1,0 +1,18 @@
+{
+  "name": "ecobuild-verifier",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "fastify": "4.26.2"
+  },
+  "devDependencies": {
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3"
+  }
+}
