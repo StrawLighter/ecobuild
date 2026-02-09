@@ -1,0 +1,1115 @@
+{
+  "address": "HcENn31gno9LMse5iERziSpLGjMdtLZAxLQo9Ff4xn5b",
+  "metadata": {
+    "name": "ecobuild",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "contribute_credits",
+      "discriminator": [
+        63,
+        31,
+        193,
+        133,
+        187,
+        76,
+        54,
+        68
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "player_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "project_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  106,
+                  101,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "project_pool.authority",
+                "account": "ProjectPool"
+              },
+              {
+                "kind": "account",
+                "path": "project_pool.seed",
+                "account": "ProjectPool"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "convert_to_brick",
+      "discriminator": [
+        120,
+        170,
+        164,
+        125,
+        170,
+        252,
+        30,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "block_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  108,
+                  111,
+                  99,
+                  107,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "block_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_project_pool",
+      "discriminator": [
+        57,
+        109,
+        129,
+        185,
+        247,
+        97,
+        201,
+        142
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "project_pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  106,
+                  101,
+                  99,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "project_seed"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "project_seed",
+          "type": "u64"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "goal_credits",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "block_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  108,
+                  111,
+                  99,
+                  107,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_player",
+      "discriminator": [
+        79,
+        249,
+        88,
+        177,
+        220,
+        62,
+        56,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "mint_blocks",
+      "discriminator": [
+        164,
+        211,
+        235,
+        38,
+        185,
+        14,
+        8,
+        214
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "global_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "block_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  108,
+                  111,
+                  99,
+                  107,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "player_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "block_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "player_authority"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "waste_type",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "mint_poc_receipt",
+      "discriminator": [
+        214,
+        151,
+        137,
+        118,
+        177,
+        234,
+        51,
+        51
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "player_profile",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "poc_receipt",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  99
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player_profile.authority",
+                "account": "PlayerProfile"
+              },
+              {
+                "kind": "arg",
+                "path": "attestation_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "attestation_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "photo_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "zone_id",
+          "type": "string"
+        },
+        {
+          "name": "material_type",
+          "type": "u8"
+        },
+        {
+          "name": "quantity",
+          "type": "u64"
+        },
+        {
+          "name": "timestamp",
+          "type": "i64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GlobalConfig",
+      "discriminator": [
+        149,
+        8,
+        156,
+        202,
+        160,
+        252,
+        176,
+        217
+      ]
+    },
+    {
+      "name": "PlayerProfile",
+      "discriminator": [
+        82,
+        226,
+        99,
+        87,
+        164,
+        130,
+        181,
+        80
+      ]
+    },
+    {
+      "name": "ProjectPool",
+      "discriminator": [
+        106,
+        224,
+        39,
+        223,
+        146,
+        46,
+        174,
+        177
+      ]
+    },
+    {
+      "name": "ProofOfCollectionReceipt",
+      "discriminator": [
+        69,
+        42,
+        191,
+        49,
+        159,
+        158,
+        177,
+        226
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "BlocksMinted",
+      "discriminator": [
+        15,
+        81,
+        189,
+        248,
+        209,
+        152,
+        44,
+        181
+      ]
+    },
+    {
+      "name": "BrickConverted",
+      "discriminator": [
+        194,
+        75,
+        29,
+        137,
+        198,
+        202,
+        50,
+        21
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6001,
+      "name": "NameTooLong",
+      "msg": "Project name exceeds max length"
+    },
+    {
+      "code": 6002,
+      "name": "ZoneIdTooLong",
+      "msg": "Zone id exceeds max length"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidMaterialType",
+      "msg": "Material type is invalid"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidTimestamp",
+      "msg": "Timestamp is invalid"
+    },
+    {
+      "code": 6005,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6006,
+      "name": "Unauthorized",
+      "msg": "Unauthorized signer"
+    },
+    {
+      "code": 6007,
+      "name": "InsufficientBlocks",
+      "msg": "Insufficient BLOCK tokens (need 10)"
+    }
+  ],
+  "types": [
+    {
+      "name": "BlocksMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "waste_type",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BrickConverted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_brick_count",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GlobalConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "block_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_blocks_minted",
+            "type": "u64"
+          },
+          {
+            "name": "total_bricks_created",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "total_credits",
+            "type": "u64"
+          },
+          {
+            "name": "blocks_minted",
+            "type": "u64"
+          },
+          {
+            "name": "brick_count",
+            "type": "u64"
+          },
+          {
+            "name": "collections_count",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProjectPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "seed",
+            "type": "u64"
+          },
+          {
+            "name": "goal_credits",
+            "type": "u64"
+          },
+          {
+            "name": "received_credits",
+            "type": "u64"
+          },
+          {
+            "name": "name_len",
+            "type": "u8"
+          },
+          {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProofOfCollectionReceipt",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "attestation_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "photo_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "zone_id_len",
+            "type": "u8"
+          },
+          {
+            "name": "zone_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "material_type",
+            "type": "u8"
+          },
+          {
+            "name": "quantity",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #fafaf9;
+  --foreground: #1c1917;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Solana wallet adapter overrides */
+.wallet-adapter-button {
+  background-color: #16a34a !important;
+  border-radius: 0.5rem !important;
+  font-weight: 600 !important;
+  height: 2.5rem !important;
+  padding: 0 1.25rem !important;
+  font-size: 0.875rem !important;
+}
+
+.wallet-adapter-button:hover {
+  background-color: #15803d !important;
+}
+
+.wallet-adapter-button-trigger {
+  background-color: #16a34a !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background-color: #1c1917 !important;
+  border-radius: 1rem !important;
+}
+
+.wallet-adapter-modal-title {
+  color: #fafaf9 !important;
+}

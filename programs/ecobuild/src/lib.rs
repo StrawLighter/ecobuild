@@ -1,8 +1,14 @@
 #![allow(unexpected_cfgs)]
 
 use anchor_lang::prelude::*;
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{self, Burn, Mint, MintTo, Token, TokenAccount},
+};
 
-declare_id!("EcoBui1d11111111111111111111111111111111111");
+declare_id!("HcENn31gno9LMse5iERziSpLGjMdtLZAxLQo9Ff4xn5b");
+
+pub const BLOCKS_PER_BRICK: u64 = 10;
 
 #[program]
 pub mod ecobuild {
@@ -61,7 +67,129 @@ pub mod ecobuild {
             timestamp,
         )
     }
+
+    pub fn initialize_config(ctx: Context<InitializeConfig>) -> Result<()> {
+        let config = &mut ctx.accounts.global_config;
+        config.authority = ctx.accounts.authority.key();
+        config.block_mint = ctx.accounts.block_mint.key();
+        config.total_blocks_minted = 0;
+        config.total_bricks_created = 0;
+        config.bump = ctx.bumps.global_config;
+        Ok(())
+    }
+
+    pub fn mint_blocks(
+        ctx: Context<MintBlocks>,
+        amount: u64,
+        waste_type: u8,
+    ) -> Result<()> {
+        if amount == 0 {
+            return Err(ErrorCode::InvalidAmount.into());
+        }
+        MaterialType::try_from(waste_type)?;
+
+        // Mint BLOCK tokens to player's ATA using GlobalConfig PDA as mint authority
+        let seeds = &[
+            GlobalConfig::SEED_PREFIX,
+            &[ctx.accounts.global_config.bump],
+        ];
+        let signer_seeds = &[&seeds[..]];
+
+        token::mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                MintTo {
+                    mint: ctx.accounts.block_mint.to_account_info(),
+                    to: ctx.accounts.player_token_account.to_account_info(),
+                    authority: ctx.accounts.global_config.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            amount,
+        )?;
+
+        // Initialize player profile if newly created via init_if_needed
+        let player = &mut ctx.accounts.player_profile;
+        if player.authority == Pubkey::default() {
+            player.authority = ctx.accounts.player_authority.key();
+            player.bump = ctx.bumps.player_profile;
+            player.total_credits = 0;
+            player.blocks_minted = 0;
+            player.brick_count = 0;
+            player.collections_count = 0;
+        }
+
+        // Update player stats
+        player.blocks_minted = player
+            .blocks_minted
+            .checked_add(amount)
+            .ok_or(ErrorCode::Overflow)?;
+        player.collections_count = player
+            .collections_count
+            .checked_add(1)
+            .ok_or(ErrorCode::Overflow)?;
+
+        // Update global stats
+        let config = &mut ctx.accounts.global_config;
+        config.total_blocks_minted = config
+            .total_blocks_minted
+            .checked_add(amount)
+            .ok_or(ErrorCode::Overflow)?;
+
+        emit!(BlocksMinted {
+            player: ctx.accounts.player_profile.authority,
+            amount,
+            waste_type,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+
+        Ok(())
+    }
+
+    pub fn convert_to_brick(ctx: Context<ConvertToBrick>) -> Result<()> {
+        // Check balance
+        if ctx.accounts.player_token_account.amount < BLOCKS_PER_BRICK {
+            return Err(ErrorCode::InsufficientBlocks.into());
+        }
+
+        // Burn 10 BLOCK tokens from player's ATA
+        token::burn(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.block_mint.to_account_info(),
+                    from: ctx.accounts.player_token_account.to_account_info(),
+                    authority: ctx.accounts.authority.to_account_info(),
+                },
+            ),
+            BLOCKS_PER_BRICK,
+        )?;
+
+        // Update player stats
+        let player = &mut ctx.accounts.player_profile;
+        player.brick_count = player
+            .brick_count
+            .checked_add(1)
+            .ok_or(ErrorCode::Overflow)?;
+
+        // Update global stats
+        let config = &mut ctx.accounts.global_config;
+        config.total_bricks_created = config
+            .total_bricks_created
+            .checked_add(1)
+            .ok_or(ErrorCode::Overflow)?;
+
+        emit!(BrickConverted {
+            player: player.authority,
+            new_brick_count: player.brick_count,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+
+        Ok(())
+    }
 }
+
+// ── Account contexts ──────────────────────────────────────────────────
 
 #[derive(Accounts)]
 pub struct InitializePlayer<'info> {
@@ -146,11 +274,136 @@ pub struct MintProofOfCollectionReceipt<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct InitializeConfig<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(
+        init,
+        payer = authority,
+        space = GlobalConfig::SIZE,
+        seeds = [GlobalConfig::SEED_PREFIX],
+        bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+    #[account(
+        init,
+        payer = authority,
+        mint::decimals = 0,
+        mint::authority = global_config,
+        seeds = [b"block_mint"],
+        bump
+    )]
+    pub block_mint: Account<'info, Mint>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct MintBlocks<'info> {
+    #[account(
+        mut,
+        constraint = authority.key() == global_config.authority @ ErrorCode::Unauthorized
+    )]
+    pub authority: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [GlobalConfig::SEED_PREFIX],
+        bump = global_config.bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+    #[account(
+        mut,
+        seeds = [b"block_mint"],
+        bump,
+        constraint = block_mint.key() == global_config.block_mint
+    )]
+    pub block_mint: Account<'info, Mint>,
+    #[account(
+        init_if_needed,
+        payer = authority,
+        space = PlayerProfile::SIZE,
+        seeds = [PlayerProfile::SEED_PREFIX, player_authority.key().as_ref()],
+        bump
+    )]
+    pub player_profile: Account<'info, PlayerProfile>,
+    #[account(
+        init_if_needed,
+        payer = authority,
+        associated_token::mint = block_mint,
+        associated_token::authority = player_authority,
+    )]
+    pub player_token_account: Account<'info, TokenAccount>,
+    /// CHECK: The player's wallet pubkey, used to derive player_profile PDA and ATA.
+    pub player_authority: UncheckedAccount<'info>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ConvertToBrick<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [GlobalConfig::SEED_PREFIX],
+        bump = global_config.bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+    #[account(
+        mut,
+        seeds = [b"block_mint"],
+        bump,
+        constraint = block_mint.key() == global_config.block_mint
+    )]
+    pub block_mint: Account<'info, Mint>,
+    #[account(
+        mut,
+        seeds = [PlayerProfile::SEED_PREFIX, authority.key().as_ref()],
+        bump = player_profile.bump,
+        constraint = player_profile.authority == authority.key()
+    )]
+    pub player_profile: Account<'info, PlayerProfile>,
+    #[account(
+        mut,
+        associated_token::mint = block_mint,
+        associated_token::authority = authority,
+    )]
+    pub player_token_account: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
+// ── Account structs ───────────────────────────────────────────────────
+
+#[account]
+pub struct GlobalConfig {
+    pub authority: Pubkey,
+    pub block_mint: Pubkey,
+    pub total_blocks_minted: u64,
+    pub total_bricks_created: u64,
+    pub bump: u8,
+}
+
+impl GlobalConfig {
+    pub const SEED_PREFIX: &'static [u8] = b"global_config";
+    pub const SIZE: usize = 8  // discriminator
+        + 32                   // authority
+        + 32                   // block_mint
+        + 8                    // total_blocks_minted
+        + 8                    // total_bricks_created
+        + 1;                   // bump
+}
+
 #[account]
 pub struct PlayerProfile {
     pub authority: Pubkey,
     pub bump: u8,
     pub total_credits: u64,
+    pub blocks_minted: u64,
+    pub brick_count: u64,
+    pub collections_count: u64,
 }
 
 impl PlayerProfile {
@@ -158,12 +411,18 @@ impl PlayerProfile {
     pub const SIZE: usize = 8  // discriminator
         + 32                   // authority pubkey
         + 1                    // bump
-        + 8; // total credits
+        + 8                    // total credits
+        + 8                    // blocks_minted
+        + 8                    // brick_count
+        + 8;                   // collections_count
 
     pub fn initialize(&mut self, authority: Pubkey, bump: u8) -> Result<()> {
         self.authority = authority;
         self.bump = bump;
         self.total_credits = 0;
+        self.blocks_minted = 0;
+        self.brick_count = 0;
+        self.collections_count = 0;
         Ok(())
     }
 
@@ -197,7 +456,7 @@ impl ProjectPool {
         + 8                    // goal credits
         + 8                    // received credits
         + 1                    // name length
-        + Self::NAME_MAX_LEN; // name bytes
+        + Self::NAME_MAX_LEN;  // name bytes
 
     pub fn initialize(
         &mut self,
@@ -264,7 +523,7 @@ impl ProofOfCollectionReceipt {
         + Self::ZONE_ID_MAX_LEN // zone id bytes
         + 1                    // material type
         + 8                    // quantity
-        + 8; // timestamp
+        + 8;                   // timestamp
 
     pub fn initialize(
         &mut self,
@@ -314,6 +573,8 @@ impl ProofOfCollectionReceipt {
     }
 }
 
+// ── Enums ─────────────────────────────────────────────────────────────
+
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MaterialType {
@@ -335,6 +596,25 @@ impl MaterialType {
     }
 }
 
+// ── Events ────────────────────────────────────────────────────────────
+
+#[event]
+pub struct BlocksMinted {
+    pub player: Pubkey,
+    pub amount: u64,
+    pub waste_type: u8,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct BrickConverted {
+    pub player: Pubkey,
+    pub new_brick_count: u64,
+    pub timestamp: i64,
+}
+
+// ── Errors ────────────────────────────────────────────────────────────
+
 #[error_code]
 pub enum ErrorCode {
     #[msg("Amount must be greater than zero")]
@@ -349,7 +629,13 @@ pub enum ErrorCode {
     InvalidTimestamp,
     #[msg("Arithmetic overflow")]
     Overflow,
+    #[msg("Unauthorized signer")]
+    Unauthorized,
+    #[msg("Insufficient BLOCK tokens (need 10)")]
+    InsufficientBlocks,
 }
+
+// ── Unit tests ────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -362,12 +648,18 @@ mod tests {
             authority: Pubkey::default(),
             bump: 0,
             total_credits: 12,
+            blocks_minted: 0,
+            brick_count: 0,
+            collections_count: 0,
         };
 
         profile.initialize(authority, 7).unwrap();
         assert_eq!(profile.authority, authority);
         assert_eq!(profile.bump, 7);
         assert_eq!(profile.total_credits, 0);
+        assert_eq!(profile.blocks_minted, 0);
+        assert_eq!(profile.brick_count, 0);
+        assert_eq!(profile.collections_count, 0);
     }
 
     #[test]
@@ -405,6 +697,9 @@ mod tests {
             authority: Pubkey::default(),
             bump: 1,
             total_credits: u64::MAX,
+            blocks_minted: 0,
+            brick_count: 0,
+            collections_count: 0,
         };
 
         let err = profile.add_credits(1).unwrap_err();
@@ -506,5 +801,34 @@ mod tests {
             )
             .unwrap_err();
         assert_eq!(err, ErrorCode::InvalidAmount.into());
+    }
+
+    #[test]
+    fn global_config_size_is_correct() {
+        assert_eq!(GlobalConfig::SIZE, 8 + 32 + 32 + 8 + 8 + 1);
+    }
+
+    #[test]
+    fn player_profile_size_includes_new_fields() {
+        assert_eq!(PlayerProfile::SIZE, 8 + 32 + 1 + 8 + 8 + 8 + 8);
+    }
+
+    #[test]
+    fn material_type_try_from_valid() {
+        assert_eq!(MaterialType::try_from(0).unwrap(), MaterialType::Plastic);
+        assert_eq!(MaterialType::try_from(1).unwrap(), MaterialType::Glass);
+        assert_eq!(MaterialType::try_from(2).unwrap(), MaterialType::Metal);
+        assert_eq!(MaterialType::try_from(3).unwrap(), MaterialType::Paper);
+    }
+
+    #[test]
+    fn material_type_try_from_invalid() {
+        let err = MaterialType::try_from(4).unwrap_err();
+        assert_eq!(err, ErrorCode::InvalidMaterialType.into());
+    }
+
+    #[test]
+    fn blocks_per_brick_constant() {
+        assert_eq!(BLOCKS_PER_BRICK, 10);
     }
 }

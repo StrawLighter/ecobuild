@@ -15,6 +15,13 @@ target/
 
 # Build output
 dist/
+.next/
+.vercel/
 
 # OS
 .DS_Store
+
+# Keypair files — NEVER commit
+*.json.bak
+*-keypair.json
+!apps/verifier/idl/*.json
