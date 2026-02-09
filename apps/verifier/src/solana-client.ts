@@ -14,6 +14,7 @@ import {
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "bn.js";
 import fs from "node:fs";
+import path from "node:path";
 
 // ── IDL import ─────────────────────────────────────────────────────────
 // We load the IDL dynamically at init time
@@ -92,12 +93,22 @@ export async function initSolanaClient() {
     preflightCommitment: "confirmed",
   });
 
-  // Load IDL — check local idl/ dir first (Docker), then fall back to target/
-  const idlPath =
-    process.env.IDL_PATH ??
-    (fs.existsSync(new URL("../../idl/ecobuild.json", import.meta.url).pathname)
-      ? new URL("../../idl/ecobuild.json", import.meta.url).pathname
-      : new URL("../../../target/idl/ecobuild.json", import.meta.url).pathname);
+  // Load IDL — try multiple locations:
+  //   1. IDL_PATH env var (explicit override)
+  //   2. ./idl/ecobuild.json (Docker: copied into /app/idl/)
+  //   3. ../../../target/idl/ecobuild.json (local dev: Anchor build output)
+  const idlCandidates = [
+    process.env.IDL_PATH,
+    path.join(process.cwd(), "idl", "ecobuild.json"),
+    path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..", "..", "target", "idl", "ecobuild.json"),
+  ].filter(Boolean) as string[];
+
+  const idlPath = idlCandidates.find((p) => fs.existsSync(p));
+  if (!idlPath) {
+    throw new Error(
+      `IDL not found. Searched:\n${idlCandidates.map((p) => `  - ${p}`).join("\n")}`
+    );
+  }
 
   idl = JSON.parse(fs.readFileSync(idlPath, "utf-8"));
   program = new anchor.Program(idl, provider);
