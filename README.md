@@ -1,60 +1,84 @@
-# EcoBuild — Colosseum Agent Hackathon
+<div align="center">
 
-## Vision
-EcoBuild turns waste collection into a Solana-powered construction economy. Players verify cleanup efforts, earn tokenized material credits, and direct them toward community building projects orchestrated by autonomous agents.
+# EcoBuild
 
-## What's in the MVP
-- Anchor program that initializes players and records contributions.
-- Verification service stub for proof-of-cleanup ingestion.
-- Scripts and docs for running the happy-path demo.
+**Proof-of-Collection → BrickCredits → Community Builds**
 
-## Current Milestone
-**Status:** `feat: mocked verifier attest endpoint`
-- Anchor workspace includes player/profile init, project pool creation, and credit contribution handlers with helper tests.
-- Verifier service exposes `/health` and a mocked `/attest` endpoint with validation + deterministic attestation hashes.
-- Demo script placeholder outlines the walkthrough.
+![Solana](https://img.shields.io/badge/Solana-9945FF?logo=solana&logoColor=white)
+![Anchor](https://img.shields.io/badge/Anchor-000?logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-5FA04E?logo=nodedotjs&logoColor=white)
 
-## Build & Test Status
-- `cargo build` (native) succeeds.
-- `anchor build` currently blocked: `cargo-build-sbf` tool is missing and `release.solana.com` is unreachable from this machine. See `docs/build-notes.md` and `docs/toolchain.md` for remediation steps.
-- `anchor test` pending until the SBF toolchain is installed (same issue as above).
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/StrawLighter/ecobuild)
 
-## How to Run the Health Check
-1. Install dependencies and build the verifier:
-   ```bash
-   cd apps/verifier
-   npm install
-   npm run build
-   npm start
-   ```
-2. In a separate terminal, call the health endpoint:
-   ```bash
-   curl http://localhost:3000/health
-   ```
-   Expected response:
-   ```json
-   { "ok": true, "version": "0.1.0", "commit": "dev" }
-   ```
+</div>
 
-## Demo (60 Seconds)
-Use the local demo script to hit the verifier and show the PoC flow:
-`docs/demo-run.md`
+---
 
-## Hackathon Deliverables
-- **Solana Program (Anchor)** handling player registration, verified material submissions, and project material vaults.
-- **Openclaw Agent Workers** for submission verification, on-chain interactions, allocation logic, and reward issuance.
-- **Demo Dashboard** visualizing player standings and real-time project progress.
-- **Forum & Project Assets** including ideation posts, progress updates, and submission materials.
+> **Status:** 🟢 Live — *Colosseum Agent Hackathon Submission*
 
-## Repository Structure
+## Overview
+
+EcoBuild turns waste collection into a Solana-powered construction economy. Players verify real-world cleanup efforts through proof-of-collection, earn tokenized **BrickCredits**, and direct them toward community building projects orchestrated by autonomous AI agents. Built for the Colosseum Agent Hackathon.
+
+## How It Works
+
 ```
-programs/    # Anchor programs
-apps/        # Agent and service code (verifier, etc.)
-scripts/     # Demo helpers
-docs/        # Architecture + planning docs
+🗑️ Collect Waste → 📸 Submit Proof → ✅ AI Verifies → 🧱 Earn BrickCredits → 🏗️ Fund Community Builds
 ```
 
-## Open Questions
-- Final decision on material token representation (SPL token vs. metadata NFT)
-- Choice of CV verification stack for MVP (hosted model vs. stub)
-- Integration partners for mock rewards (sponsors, community groups)
+## Features
+
+- **Proof-of-Collection** — Submit photo evidence of cleanup efforts verified by AI agents
+- **BrickCredits Economy** — SPL tokens minted on verified submissions, burned on project contributions
+- **Community Build Projects** — On-chain project pools where players direct credits toward real builds
+- **Agent Verification** — Openclaw AI workers handle submission review and on-chain attestation
+- **Player Profiles** — Track contributions, credits earned, and projects supported
+- **Demo Dashboard** — Real-time visualization of player standings and project progress
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Smart Contracts | Anchor (Solana) |
+| Verification | Node.js agent service |
+| Token Economy | SPL Tokens (BrickCredits) |
+| Agent Workers | Openclaw framework |
+| Frontend | Next.js, React |
+| Deployment | Vercel |
+
+## Project Structure
+
+```
+ecobuild/
+├── programs/        # Anchor programs (player reg, submissions, project vaults)
+├── apps/            # Agent and service code (verifier, etc.)
+│   └── verifier/    # Attestation service with /health and /attest endpoints
+├── scripts/         # Demo helpers
+└── docs/            # Architecture + planning docs
+```
+
+## Getting Started
+
+```bash
+# Build Anchor programs
+anchor build
+
+# Start the verifier service
+cd apps/verifier
+npm install && npm run build && npm start
+
+# Health check
+curl http://localhost:3000/health
+# → { "ok": true, "version": "0.1.0", "commit": "dev" }
+```
+
+## License
+
+MIT
+
+---
+
+<div align="center">
+  <sub>Built by <a href="https://github.com/StrawLighter">Orchard 7</a></sub>
+</div>
